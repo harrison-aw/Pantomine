@@ -13,14 +13,17 @@ pantomine = {
 
     
     onReady: function () {
-	pantomine.picture_source = navigator.camera.PictureSourceType;
-	pantomine.destination_type = navigator.camera.DestinationType;
+	if (navigator && navigator.camera) {
+	    pantomine.picture_source = navigator.camera.PictureSourceType;
+	    pantomine.destination_type = navigator.camera.DestinationType;
+	} else {
+	    pantomine.setCanvas('img/sky.jpg');
+	}
 
 	pantomine.canvas = document.getElementById(pantomine.CANVAS_ID);
 	pantomine.context = pantomine.canvas.getContext('2d');
 
 	$('#'+pantomine.BUTTON_ID).click(pantomine.capturePhoto);
-
 	$('#'+pantomine.CANVAS_ID).click(pantomine.getColor);
     },
 
@@ -35,6 +38,7 @@ pantomine = {
 	pixel = image_data.data;
 
 	$('#rgb').val(pixel[0]+','+pixel[1]+','+pixel[2]);
+	pantomine.getPantone(pixel[0], pixel[1], pixel[2]);
     },
 
     setCanvas: function (image_source) {
@@ -76,7 +80,43 @@ pantomine = {
 		quality: 50,
 		destinationType: pantomine.destination_type.FILE_URI,
 		sourceType: source });
+    },
+
+    
+    getPantone: function (r, g, b) {
+	var url = 'http://www.harrisonaw.com/pantomine/'+r+'/'+g+'/'+b+'/'; 
+
+	if ($.mobile) {
+	$.support.cors = true;
+	    $.mobile.allowCrossDomainPages = true;
+	}
+
+	$('#pantone').val('Loading...');
+
+	$.ajax({
+		url: url,
+		method: 'GET',
+	        dataType: 'jsonp',
+		jsonpCallback: 'pantomine.setPantone',
+	    }).done(function (data, textStatus, jqXHR) {
+		    var name;
+		    $('#pantone').val(textStatus);
+		    for (name in data) {
+			console.log(name);
+			break;
+		    }
+		}).fail(function (jqXHR, textStatus, error) {
+			$('#pantone').val(textStatus + '; ' + error);
+		    });
+    },
+
+    setPantone: function (data) {
+	var key;
+	for (key in data) {
+	    console.log(key);
+	}
     }
 };
 
 document.addEventListener('deviceready', pantomine.onReady, false);
+$(pantomine.onReady);
